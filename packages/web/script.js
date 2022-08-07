@@ -12,6 +12,12 @@ const manualAssertions = []
 let manualAssertionsLoaded = false
 const results = []
 let autoValidate = false
+let docType = "td"
+
+const tdRelated = [];
+[].forEach.call(document.querySelectorAll('.td-related'), el => {
+	tdRelated.push({"el": el, "display": el.style.display})
+})
 
 document.getElementById("box_jsonld_validate").checked = true
 document.getElementById("box_reset_logging").checked = true
@@ -23,6 +29,25 @@ document.getElementById("validation_table_head").addEventListener("click", ()=>{
 // Auto validates only when the box is checked.
 document.getElementById("box_auto_validate").addEventListener("change", () => {
 	autoValidate = document.getElementById("box_auto_validate").checked
+})
+
+document.getElementById("doc_type").addEventListener("change", () => {
+	docType = document.getElementById("doc_type").value
+	if (docType == 'tm') {
+		[].forEach.call(tdRelated, el => {
+			el["el"].style.display = "none"
+		})
+		window.editor = window.tmEditor
+		document.getElementById("td-editor").style.display = "none"
+		document.getElementById("tm-editor").style.display = "block"
+	} else {
+		[].forEach.call(tdRelated, el => {
+			el["el"].style.display = el["display"]
+		})
+		window.editor = window.tdEditor
+		document.getElementById("td-editor").style.display = "block"
+		document.getElementById("tm-editor").style.display = "none"
+	}
 })
 
 document.getElementById("btn_gistify").addEventListener("click", () => {
@@ -135,11 +160,11 @@ document.getElementById("editor_theme").addEventListener("change", () => {
 })
 
 document.getElementById("btn_assertion").addEventListener("click", () => {
-	util.performAssertionTest(manualAssertions)
+	util.performAssertionTest(manualAssertions, docType)
 })
 
 document.getElementById("btn_validate").addEventListener("click", () => {
-	util.validate("manual")
+	util.validate("manual", undefined, docType)
 })
 
 document.getElementById("btn_clearLog").addEventListener("click", util.clearLog)
@@ -168,9 +193,8 @@ document.getElementById("btn_defaults_remove").addEventListener("click", util.re
 
 //* *************************Monaco editor code*********************************////
 // Load monaco editor ACM
-let editor
 require.config({ paths: { 'vs': './node_modules/monaco-editor/min/vs' }});
-require(['vs/editor/editor.main'], editor=function() {
+require(['vs/editor/editor.main'], window.tdEditor=function() {
 
 	const jsonCode = [].join('\n'); // Temporary initial Json
 	const modelUri = monaco.Uri.parse("a://b/foo.json"); // a made up unique URI for our model
@@ -192,7 +216,7 @@ require(['vs/editor/editor.main'], editor=function() {
 			]
 		});
 
-		window.editor=monaco.editor.create(document.getElementById("monaco"), {
+		window.tdEditor=monaco.editor.create(document.getElementById("td-editor"), {
 			model,
 			contextmenu: false,
 			theme:"vs"
@@ -201,10 +225,21 @@ require(['vs/editor/editor.main'], editor=function() {
 		document.getElementById("curtain").style.display = "none"
 
 		model.onDidChangeContent(event => { // When text in the Editor changes
-			util.validate("auto", autoValidate)
+			util.validate("auto", autoValidate, docType)
 		})
+
+		window.editor = window.tdEditor
 	}, err => {
 		console.error("loading TD schema for editor failed" + err)
 	})
 })
 
+require(['vs/editor/editor.main'], function () {
+	// TODO: Possibly add validation (like for td editor above)
+
+	window.tmEditor = monaco.editor.create(document.getElementById('tm-editor'), {
+	  language: 'json',
+	  // Without automaticLayout editor will not be built inside hidden div
+	  automaticLayout: true
+	});
+  });

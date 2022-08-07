@@ -66,17 +66,18 @@ export function populateExamples(urlAddrObject){
  * passes the result to the user
  * as download
  * @param {object} manualAssertions The manual assertions input of the user
+ * @param {string} docType "td" or "tm"
  */
-export function performAssertionTest(manualAssertions){
+export function performAssertionTest(manualAssertions, docType){
 
     document.getElementById("curtain").style.display = "block"
     document.getElementById("curtain-text").innerHTML = "Assertion test ongoing..."
     const assertionSchemas=[]
     const manualAssertionsJSON=[]
-    const tdToValidate=window.editor.getValue()
+    const docToValidate=window.editor.getValue()
 
-    if (tdToValidate === "") {
-        alert("No TD given")
+    if (docToValidate === "") {
+        alert(`No ${docType.toUpperCase()} given`)
         document.getElementById("curtain").style.display = "none"
         return
     }
@@ -85,7 +86,9 @@ export function performAssertionTest(manualAssertions){
         document.getElementById("curtain-text").innerHTML = input
     }
 
-    Assertions.tdAssertions([tdToValidate], getTextUrl, logging, manualAssertions)
+    const assertions = (docType === "td") ? Assertions.tdAssertions : Assertions.tmAssertions
+
+    assertions([docToValidate], getTextUrl, logging, manualAssertions)
     .then( result => {
         // remove commas to avoid errors
         const cleanResults = []
@@ -343,23 +346,25 @@ export function exampleSelectHandler(e, obj) {
  * Calls the validation function if intended
  * @param {string} source "auto" or "manual"
  * @param {boolean} autoValidate is autovalidation active?
+ * @param {string} docType "td" or "tm"
  */
-export function validate(source, autoValidate) {
+export function validate(source, autoValidate, docType="td") {
     if(source === "manual" || (source === "auto" && autoValidate)) {
         const text = window.editor.getValue();
 
         resetValidationStatus()
 
-        realValidator(text, source);
+        realValidator(text, docType, source);
     }
 }
 
 /**
  * Calls the Validator of the core package
- * @param {string} td Thing Description to validate
+ * @param {string} body Thing Description/Thing Model to validate
+ * @param {string} docType "td" or "tm"
  * @param {*} source "manual" or "auto"
  */
-function realValidator(td, source) {
+function realValidator(body, docType, source) {
     document.getElementById("btn_validate").setAttribute("disabled", "true")
     if (document.getElementById("box_reset_logging").checked) {
         document.getElementById("console").innerHTML = ""
@@ -370,9 +375,11 @@ function realValidator(td, source) {
     const checkJsonLd = document.getElementById("box_jsonld_validate").checked
 
     console.log(Validators.tdValidator)
-    console.log(Validators.tmValidator);
+    console.log(Validators.tmValidator)
 
-    Validators.tdValidator(td, log, {checkDefaults: true, checkJsonLd})
+    const validator = (docType === "td") ? Validators.tdValidator : Validators.tmValidator
+
+    validator(body, log, {checkDefaults: true, checkJsonLd})
     .then( result => {
         let resultStatus = "success"
 
