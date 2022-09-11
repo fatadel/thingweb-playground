@@ -10,7 +10,7 @@ module.exports = crawlPaths
  * @returns {object} The openAPI paths object
  */
 function crawlPaths(td) {
-    const cPaths = {}
+    const cPaths = new Map()
     const interactionTypes = ["properties", "actions", "events"]
     const httpBase = td.base && (td.base.startsWith("http://") || td.base.startsWith("https://")) ? true : false
 
